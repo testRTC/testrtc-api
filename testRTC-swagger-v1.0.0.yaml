@@ -1,0 +1,641 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "testRTC API"
+  description: "testRTC's API for WebRTC service monitoring and testing automation."
+  termsOfService: "http://testrtc.com/terms/"
+  contact:
+    name: "testRTC API Team"
+    email: "contact@testrtc.com"
+    url: "https://testrtc.com"
+host: "api.testrtc.com"
+basePath: "/v1"
+tags:
+  -
+    name: "tests"
+    description: "The collection of test scripts you have in your account"
+  -
+    name: "testruns"
+    description: "Test results stored in your account. Each testrun stores information of multiple `testagents`"
+  -
+    name: "testagents"
+    description: "Test results of a specific test agent within a given `testrun`"
+schemes:
+  - "https"
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: apikey
+    in: header
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+paths:
+  /tests/{testId}:
+    get:
+      description: "<p>Retrieve the information of a specific test.</p><p><i>Additional fields will be returned in the future in the JSON once we model them nicely.</i></p>"
+      operationId: "findTestById"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "testId"
+          in: "path"
+          description: "ID of the test to fetch"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "test response"
+          schema:
+            $ref: "#/definitions/Test"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+  /tests/{testId}/run:
+    post:
+      description: "<p>Execute a specific test.</p><p>Once the test finishes, if a webhook is provided, the webhook will be called with the given input. To the input, a field called “testRunId” will be added, with the ID of the test run result.</p><p>The webhook's override can contain a list of key values of fields of the test that are overridden with specific values for this test. Fields that can be overridden are: concurrentUsers, iterations, runOptions, serviceUrl</p><p><i>Additional fields will be returned in the future in the JSON once we model them nicely.</i></p>"
+      operationId: "runTestById"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "testId"
+          in: "path"
+          description: "ID of the test to fetch"
+          required: true
+          type: "string"
+        -
+          name: "parameters"
+          in: "body"
+          description: "If this webhook is provided, then it will be called once the test finishes. A field called 'testRunId' will be added, with the ID of the test run"
+          required: false
+          schema:
+            $ref: "#/definitions/TestRunParameters"
+      responses:
+        200:
+          description: "test response"
+          schema:
+            $ref: "#/definitions/TestRunId"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+  /tests/remote/run:
+    post:
+      description: "<p>Initialize new test run for remote (SDK) tests</p>"
+      operationId: "runRemoteTest"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "options"
+          in: "body"
+          description: "Remote test execution options"
+          required: true
+          schema:
+            $ref: "#/definitions/RemoteTestOptions"
+      responses:
+        200:
+          description: "new test run ID"
+          schema:
+            $ref: "#/definitions/TestRunId"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+  /testruns/{testRunId}:
+    get:
+      description: "<p>Retrieve test run information.</p><p><i>Additional fields will be returned in the future in the JSON once we model them nicely.</i></p>"
+      operationId: "retrieveTestRunById"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "testRunId"
+          in: "path"
+          description: "ID of the test run to fetch"
+          required: true
+          type: "string"
+        -
+          name: "expand"
+          in: "query"
+          description: "<p>Defaults to false. If set to true, the 'agents' array returns the retrieve operation on the relevant testagents instead of their IDs only</p><p><strong>Not supported at this point(yet)</strong></p>"
+          required: false
+          type: "boolean"
+      responses:
+        200:
+          description: "test response"
+          schema:
+            $ref: "#/definitions/TestRun"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+  /testruns/{testRunId}/iterations/{testIterationMachineId}/{testIterationIndex}/stats:
+    post:
+      description: "<p>Upload getStats data to Azure for selected test iteration (not to be used with remote test runs)</p>"
+      operationId: "updateStandardTestRunStats"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "testRunId"
+          in: "path"
+          description: "Test run ID"
+          required: true
+          type: "string"
+        -
+          name: "testIterationMachineId"
+          in: "path"
+          description: "Machine ID for the iteration"
+          required: true
+          type: "string"
+        -
+          name: "testIterationIndex"
+          in: "path"
+          description: "Index of the iteration"
+          required: true
+          type: "integer"
+        -
+          name: "chunk"
+          in: "body"
+          description: "getStats data"
+          required: true
+          schema:
+            $ref: "#/definitions/GetStatsChunk"
+      responses:
+        200:
+          description: "success update"
+          schema:
+            $ref: "#/definitions/BlobUploadResult"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+  /testruns/remote/{testRunId}/stats:
+    post:
+      description: "<p>Update remote executed (SDK) test run with getStats data, use isLastChunk = true to finalize test run.</p>"
+      operationId: "updateRemoteTestRunStats"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "testRunId"
+          in: "path"
+          description: "ID of the test run"
+          required: true
+          type: "string"
+        -
+          name: "chunk"
+          in: "body"
+          description: "getStats data"
+          required: true
+          schema:
+            $ref: "#/definitions/GetStatsChunk"
+      responses:
+        200:
+          description: "success update"
+          schema:
+            $ref: "#/definitions/TestRunId"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+  /testagents/{testAgentId}:
+    get:
+      description: "<p>Retrieve report of a specific test agent information.</p><p>Each test run result is constructed out of the number of test agents used for running the test. This API retrieves the information from one specific test agent within a test run.</p><p><i>Additional fields will be returned in the future in the JSON once we model them nicely.</i></p>"
+      operationId: "retrieveTestAgentById"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "testAgentId"
+          in: "path"
+          description: "ID of the test agent to fetch"
+          required: true
+          type: "string"
+      responses:
+        200:
+          description: "test response"
+          schema:
+            $ref: "#/definitions/TestAgent"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+  /testagents/{testAgentId}/metrics:
+    post:
+      description: "<p>Add or update custom metrics of a specific test run agent.</p><p>This appends the custom metrics selected to the current metrics already in this run. If the same name is already in the test, its value will get updated.</p><p>This call returns the updated list of all custom metrics for the test upon success.</p>"
+      operationId: "updateTestAgentMetricsById"
+      x-swagger-router-controller: Default
+      security:
+       - api_key: []
+      parameters:
+        -
+          name: "testAgentId"
+          in: "path"
+          description: "ID of the test agent to fetch"
+          required: true
+          type: "string"
+        -
+          name: "metrics"
+          in: "body"
+          description: "Metrics to update"
+          required: true
+          schema:
+            $ref: "#/definitions/CustomMetrics"
+      responses:
+        200:
+          description: "update response"
+          schema:
+            $ref: "#/definitions/CustomMetrics"
+        400:
+          description: "Bad request - Invalid parameters supplied"
+          schema:
+            $ref: "#/definitions/Error"
+        401:
+          description: "Unauthorized - API key is invalid"
+        403:
+          description: "Forbidden - Resource is not allowed"
+        404:
+          description: "Not found - resource doesn’t exist"
+        default:
+          description: "unexpected error"
+          schema:
+            $ref: "#/definitions/Error"
+definitions:
+  Test:
+    type: "object"
+    description: "A Test holds all the necessary elements that hold a test that can be executed in testRTC"
+    required:
+      - "testId"
+      - "name"
+      - "concurrentUsers"
+      - "iterations"
+      - "script"
+    properties:
+      testId:
+        type: "string"
+        description: "The unique identity of the test"
+      name:
+        type: "string"
+        description: "The readable name given to the test"
+      description:
+        type: "string"
+        description: "A verbose description for the test"
+      concurrentUsers:
+        type: "integer"
+        format: "int32"
+        description: "Number of concurrent browser agents used in this test"
+      iterations:
+        type: "integer"
+        format: "int32"
+        description: "Number of iterations this test is doing"
+      runOptions:
+        type: "string"
+        description: "The tagged run options configured for this test"
+      serviceUrl:
+        type: "string"
+        description: "The SERVICE_URL configured for this test"
+      script:
+        type: "string"
+        description: "The test script itself"
+  TestRunParameters:
+    type: "object"
+    description: "TBD"
+    properties:
+      webhook:
+        type: "object"
+        description: "The Webhook is used to call the customer's own API when an operation in testRTC's API completes."
+        required:
+          - "url"
+          - "input"
+        properties:
+          url:
+            type: "string"
+            description: "The URL to connect to using HTTP(S) GET when the operation completes"
+          input:
+            type: "object"
+            description: "The value to pass to the URL"
+      executionParameters:
+        type: "object"
+        description: "<p>A list of key values of fields of the test that are overridden with specific values for this test. Fields that can be overridden are:</p><ul><li>concurrentUsers</li><li>iterations</li><li>runOptions</li><li>serviceUrl</li></ul>"
+        properties:
+          concurrentUsers:
+            type: "integer"
+            format: "int32"
+            description: "The number of concurrent browser agents used in this test run"
+      machineProfiles:
+        type: "array"
+        items:
+          $ref: "#/definitions/MachineProfile"
+        description: "A list of machine profiles used to run a testagents"
+  MachineProfile:
+    type: "object"
+    description: "Machine profile for the test"
+    properties:
+      browser:
+        type: "string"
+        description: "The browser used for the test"
+      location:
+        type: "string"
+        description: "The data center used for the test"
+      networkProfile:
+        type: "string"
+        description: "The network profile used by the test"
+      firewallProfile:
+        type: "string"
+        description: "The firewall profile used by the test"
+      media:
+        type: "string"
+        description: "The media file used by this test"
+    required:
+      - "browser"
+      - "location"
+      - "networkProfile"
+      - "firewallProfile"
+      - "media"
+  TestRun:
+    type: "object"
+    description: "A TestRun object holds a specific test execution"
+    properties:
+      testRunId:
+        type: "string"
+        description: "The unique identity of the TestRun object. Used as the key to access a test run."
+      testId:
+        type: "string"
+        description: "The unique identity of the Test object."
+      status:
+        type: "string"
+        description: "The result status of the test. Can be 'success', 'warning' or 'failure'"
+      runType:
+        type: "string"
+        description: "Can be either 'manual' or 'automated'"
+      concurrentUsers:
+        type: "integer"
+        format: "int32"
+        description: "The number of concurrent browser agents used in this test run"
+      totalSessions:
+        type: "integer"
+        format: "int32"
+        description: "The total number of WebRTC PeerConnection sessions conducted in this test run"
+      totalIncomingData:
+        type: "integer"
+        format: "int64"
+        description: "(in bytes) The total number of bytes received in the test by all browsers (as reported by the browsers' getstats() API call)"
+      totalOutgoingData:
+        type: "integer"
+        format: "int64"
+        description: "(in bytes) The total number of bytes sent in the test by all browsers (as reported by the browsers' getstats() API call)"
+      startTime:
+        type: "string"
+        format: "Date"
+        description: "The starting time of the test run"
+      duration:
+        type: "integer"
+        format: "int32"
+        description: "(in seconds) The total duration of the test run"
+      agents:
+        type: "array"
+        items:
+          type: "string"
+        description: "The list of unique test agents used in the given test run. This can either be ID values or expanded TestAgent objects, depending on which API call was made and what parameters was passed to it."
+      url:
+        type: "string"
+        description: "URL of this test result"
+  TestAgent:
+    type: "object"
+    description: "A TestAgent object holds the reported statistics of a specific browser agent used in a given TestRun."
+    properties:
+      testAgentId:
+        type: "string"
+        description: "The unique identifier of a test agent used in a test run. This value is unique across the testRTC service"
+      testRunId:
+        type: "string"
+        description: "The unique identifier of the test run this test agent was used in"
+      testId:
+        type: "string"
+        description: "The unique identifier of the test that was executed by this agent"
+      status:
+        type: "string"
+        description: "The result status of the test. Can be 'success', 'warning' or 'failure'"
+      machine:
+        type: "string"
+        description: "The type of the machine used by this test agent"
+      os:
+        type: "string"
+        description: "The operating system used by this test agent"
+      browser:
+        type: "object"
+        required:
+          - "name"
+          - "version"
+        properties:
+          name:
+            type: "string"
+            description: "The name of the browser used"
+          version:
+            type: "string"
+            description: "The exact browser version used"
+        description: "The browser used by this test agent"
+      location:
+        type: "string"
+        description: "The data center this test agent was running from"
+      networkProfile:
+        type: "string"
+        description: "The network profile used by this test agent"
+      firewallProfile:
+        type: "string"
+        description: "The firewall profile used by this test agent"
+      mediaFile:
+        type: "string"
+        description: "The media file used by this test agent"
+      agentIdx:
+        type: "integer"
+        format: "int32"
+        description: "The index of this agent within the test run. Starts from 1"
+      sessionIdx:
+        type: "integer"
+        format: "int32"
+        description: "The index of this agent's session within the test run. Starts from 1"
+      inSessionIdx:
+        type: "integer"
+        format: "int32"
+        description: "The index of this agent within the session. Starts from 1"
+      startTime:
+        type: "string"
+        format: "Date"
+        description: "The starting time of the test run"
+      duration:
+        type: "integer"
+        format: "int32"
+        description: "(in seconds) The total duration of the test run"
+      customMetrics:
+        type: "array"
+        items:
+          $ref: "#/definitions/CustomMetrics"
+        description: "An array of custom metrics added by the customer to this agent's test results"
+      channels:
+        type: "array"
+        items:
+          $ref: "#/definitions/Channels"
+        description: "Channels created in this test run"
+  CustomMetrics:
+    type: "object"
+    description: "A custom metric value, provided by the customer"
+    required:
+      - "name"
+      - "value"
+    properties:
+      name:
+        type: "string"
+        description: "The customer-given name for the metric. This is used as a unique identifier when aggregating metric values across a test run"
+      value:
+        type: "string"
+        description: "The value of the custom metric"
+  Channels:
+    type: "object"
+    description: "A media channel in an agent's test run"
+    required:
+      - "name"
+      - "direction"
+      - "type"
+    properties:
+      name:
+        type: "string"
+        description: "The name of the channel. Usually this would be the SSRC generated by the browser for the channel, if it is available"
+      direction:
+        type: "string"
+        description: "Can be either 'in' or 'out'"
+      type:
+        type: "string"
+        description: "Can be either 'audio' or 'video'"
+      codec:
+        type: "string"
+        description: "The audio or video codec used in the channel"
+  TestRunId:
+    type: "object"
+    required:
+      - "testRunId"
+    properties:
+      testRunId:
+        type: "string"
+  Error:
+    type: "object"
+    required:
+      - "code"
+      - "message"
+    properties:
+      code:
+        type: "integer"
+        format: "int32"
+      message:
+        type: "string"
+  BlobUploadResult:
+    type: "object"
+    required:
+      - "fullBlobName"
+    properties:
+      fullBlobName:
+        type: "string"
+  GetStatsChunk:
+    type: "object"
+    description: "GetStats data collected during remote test execution (via SDK)"
+    required:
+      - "data"
+    properties:
+      data:
+        type: "object"
+        description: "GetStats data"
+      isLastChunk:
+        type: "boolean"
+        description: "Indicates that the test run should be finalized after this chunk of data"
+  RemoteTestOptions:
+    type: "object"
+    description: "Remote test execution options"
+    required:
+      - "name"
+    properties:
+      name:
+        type: "string"
+        description: "Test name"
